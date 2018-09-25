@@ -1,0 +1,8 @@
+# Ignore folder named 'Raw_training_data'
+Raw_training_data/
+# Ignore folder named 'Unsorted'
+Unsorted/
+# Ignore folder named 'Old_Raw_training_data'
+Old_raw_training_data/
+# Ignore folder named 'All_training_data'
+All_training_data/

@@ -1,0 +1,7 @@
+Here I will be putting down my thoughts and actions concerning traning
+
+After manual evaluation of 20180504's results it appears we are overtraining
+past 20K steps. This can be seen in the detection of large knots especially.
+It appears that 20000_20180504 is the best so far, even at detecting large
+knots so I will replace the current model of 80000_20180503.
+

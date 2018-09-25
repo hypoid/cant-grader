@@ -1,0 +1,12 @@
+The following file format will be used for the bounding boxes:
+for each folder
+	For each filename "blah.png":
+		a file called "blah.png.boxes will be made such that:
+			The file is pickle of an object with the following properties:
+				int x1 = the topleft corner x position
+				int y1 = the topleft corner y position
+				int x2 = the bottomright corner x position
+				int y2 = the bottomright corner position
+				
+
+	
