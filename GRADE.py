@@ -65,7 +65,7 @@ spec2_bf_per_inch = 0.75/12
 
 downgrade_price_per_1kBF = 150
 spec1_stand_price_per_1kBF = 300
-spec2_stand_price_per_1kBF = 520
+spec2_stand_price_per_1kBF = 400
 
 spec2_prem_price_per_1kBF = 800
 
