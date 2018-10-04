@@ -5,6 +5,7 @@ import sys
 
 DEBUG = True
 
+
 def info(type, value, tb):
     """Start the debugger if we run into an exception."""
     traceback.print_exception(type, value, tb)
@@ -380,8 +381,11 @@ def grade_now(topimg, botimg,
         total_bot_knots += knots
         total_bot_cants += cants  # This only adds 1 cant, if there are any
 
-    all_cants = total_bot_cants+total_top_cants
-    all_knots = total_bot_knots+total_top_knots
+    # TODO: revert this and fix the top camera
+    # all_cants = total_bot_cants+total_top_cants
+    # all_knots = total_bot_knots+total_top_knots
+    all_cants = total_bot_cants
+    all_knots = total_bot_knots
     piece_length = find_piece_length(all_cants)
 
     spec1_stand_sections_clear = define_good_sections(
@@ -499,10 +503,11 @@ def grade_now(topimg, botimg,
                            drawn_botimg.shape[0]-21)
 
     # Draw the cant and knots
-    for cant in total_top_cants:
-        cant.draw(drawn_topimg, draw_probability=True)
-    for knot in total_top_knots:
-        knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=True)
+    # TODO: Fix camera and uncomment this
+    # for cant in total_top_cants:
+    #     cant.draw(drawn_topimg, draw_probability=True)
+    # for knot in total_top_knots:
+    #     knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=True)
     for cant in total_bot_cants:
         cant.draw(drawn_botimg, draw_probability=True)
     for knot in total_bot_knots:
