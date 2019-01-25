@@ -452,13 +452,21 @@ def grade_now(topimg, botimg,
 
     print('Done Grading. Time taken ='+str(time.time() - start_time))
 
+    # TODO: Fix the top camera and revert this logic
+    # if (
+    #     (
+    #      (spec1_s_value > spec2_s_value and spec1_s_value > spec2_p_value)
+    #      or
+    #      (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
+    #     )
+    #     and len(total_top_knots) > 0 and len(total_bot_knots) > 0
+    #    ):
     if (
-        (
-         (spec1_s_value > spec2_s_value and spec1_s_value > spec2_p_value)
-         or
-         (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
-        )
-        and len(total_top_knots) > 0 and len(total_bot_knots) > 0
+        (spec1_s_value > spec2_s_value and
+         spec1_s_value > spec2_p_value)
+        or
+        (downgrade_value > spec2_s_value and
+         downgrade_value > spec2_p_value)
        ):
         print("Activating Spec1 output.")
         subprocess.call("IO_Adapter/Output/Send_Bad")
@@ -604,7 +612,9 @@ def online_grading():
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/101/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/201/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/301/",
-         "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/401/"]
+         "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/401/",
+         "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/501/",
+         "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/601/"]
 
     HMI_display = visutil.display()
     t = threading.Thread(target=visutil.refresh_display,
