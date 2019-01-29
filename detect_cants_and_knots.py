@@ -1,4 +1,6 @@
 """A little class to handle finding knots."""
+import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -29,6 +31,8 @@ class knot_finder(object):
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
+            # with tf.device('/device:GPU:1'):
+            # with tf.device('/device:CPU:0'):
             self.image_tensor = self.detection_graph.get_tensor_by_name(
                 'image_tensor:0')
             self.d_boxes = self.detection_graph.get_tensor_by_name(

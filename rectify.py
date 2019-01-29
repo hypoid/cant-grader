@@ -1,5 +1,3 @@
-"""Lable the designated folder of scans."""
-
 import cv2
 import argparse
 import os

@@ -1,9 +1,21 @@
 """Grade when the signal is given"""
+import os
 import traceback
 import pdb
 import sys
+import time
+import threading
+import subprocess
+import visutil
+import numpy as np
+import cv2
+import argparse
+import glob
+import shutil
 
-DEBUG = True
+import detect_cants_and_knots
+
+DEBUG = False
 
 
 def info(type, value, tb):
@@ -15,23 +27,11 @@ def info(type, value, tb):
 if DEBUG:
     sys.excepthook = info
 
-import time
-import threading
-import subprocess
-import visutil
-import numpy as np
-import cv2
-import argparse
-import glob
-import os
-import shutil
 
-import detect_cants_and_knots
-
-
-USE_CPU_ONLY = False
+USE_CPU_ONLY = True
 if USE_CPU_ONLY is True:
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 
 SAVE_SCANS = True
 LIVE = True
@@ -41,16 +41,16 @@ DPI = 20.0
 min_spec2_length_inch = 96
 
 max_Spec1_standard_knot_diam_inch = 8
-max_Spec2_standard_knot_diam_inch = 1.75
+max_Spec2_standard_knot_diam_inch = 1
 max_Spec2_premium_knot_diam_inch = 0.5
 
-spec1_s_ignore_knot_size_inch = 1.7
+spec1_s_ignore_knot_size_inch = 2
 spec2_s_ignore_knot_size_inch = 0.2
 spec2_p_ignore_knot_size_inch = 0.1
 
-spec1_s_max_knots = 8
+spec1_s_max_knots = 3
 spec2_s_max_knots = 1
-spec2_p_max_knots = 0.5
+spec2_p_max_knots = 1
 
 cant_min_face_filter_size = 100  # Filter to use on cant face objects
 section_length_inches = 24
@@ -64,11 +64,11 @@ spec2_saw_space = 1.25
 spec1_bf_per_inch = 1/12
 spec2_bf_per_inch = 0.75/12
 
-downgrade_price_per_1kBF = 150
+downgrade_price_per_1kBF = 200
 spec1_stand_price_per_1kBF = 300
 spec2_stand_price_per_1kBF = 400
 
-spec2_prem_price_per_1kBF = 800
+spec2_prem_price_per_1kBF = 600
 
 
 def find_value(num_boards,
@@ -257,7 +257,7 @@ def filter_cants_and_knots(cants, knots):
     knots = clip_knots_to_cant_face(cants, knots)
     n_knots = [knot for knot in knots if
                knot.score > .5 and
-               abs(knot.ymax-knot.ymin)/abs(knot.xmax-knot.xmin) > 0.2]
+               abs(knot.ymax-knot.ymin)/abs(knot.xmax-knot.xmin) > 0.05]
     return n_cants, n_knots
 
 
@@ -381,11 +381,8 @@ def grade_now(topimg, botimg,
         total_bot_knots += knots
         total_bot_cants += cants  # This only adds 1 cant, if there are any
 
-    # TODO: revert this and fix the top camera
-    # all_cants = total_bot_cants+total_top_cants
-    # all_knots = total_bot_knots+total_top_knots
-    all_cants = total_bot_cants
-    all_knots = total_bot_knots
+    all_cants = total_bot_cants+total_top_cants
+    all_knots = total_bot_knots+total_top_knots
     piece_length = find_piece_length(all_cants)
 
     spec1_stand_sections_clear = define_good_sections(
@@ -453,20 +450,21 @@ def grade_now(topimg, botimg,
     print('Done Grading. Time taken ='+str(time.time() - start_time))
 
     # TODO: Fix the top camera and revert this logic
+    # Done?
     # if (
-    #     (
-    #      (spec1_s_value > spec2_s_value and spec1_s_value > spec2_p_value)
-    #      or
-    #      (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
-    #     )
-    #     and len(total_top_knots) > 0 and len(total_bot_knots) > 0
+    #     (spec1_s_value > spec2_s_value and
+    #      spec1_s_value > spec2_p_value)
+    #     or
+    #     (downgrade_value > spec2_s_value and
+    #      downgrade_value > spec2_p_value)
     #    ):
     if (
-        (spec1_s_value > spec2_s_value and
-         spec1_s_value > spec2_p_value)
-        or
-        (downgrade_value > spec2_s_value and
-         downgrade_value > spec2_p_value)
+        (
+         (spec1_s_value > spec2_s_value and spec1_s_value > spec2_p_value)
+         or
+         (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
+        )
+        and len(total_top_knots) > 0 and len(total_bot_knots) > 0
        ):
         print("Activating Spec1 output.")
         subprocess.call("IO_Adapter/Output/Send_Bad")
@@ -512,10 +510,11 @@ def grade_now(topimg, botimg,
 
     # Draw the cant and knots
     # TODO: Fix camera and uncomment this
-    # for cant in total_top_cants:
-    #     cant.draw(drawn_topimg, draw_probability=True)
-    # for knot in total_top_knots:
-    #     knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=True)
+    # Done?
+    for cant in total_top_cants:
+        cant.draw(drawn_topimg, draw_probability=True)
+    for knot in total_top_knots:
+        knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=True)
     for cant in total_bot_cants:
         cant.draw(drawn_botimg, draw_probability=True)
     for knot in total_bot_knots:
@@ -564,8 +563,6 @@ def grade_now(topimg, botimg,
             display.update_display(display_img)
 
 
-
-
 def find_cant(img, start_left=True):
     height = img.shape[0]
     i = size/2
@@ -603,13 +600,7 @@ def find_cant(img, start_left=True):
 
 
 def online_grading():
-    # v = ["rtsp://root:millelec01@10.0.1.10:554/axis-media/media.amp",
-    #     "rtsp://admin:millelec01@192.168.16.9:554/Streaming/Channels/101/",
-    #     "rtsp://admin:millelec01@192.168.16.9:554/Streaming/Channels/201/",
-    #     "rtsp://admin:millelec01@192.168.16.9:554/Streaming/Channels/301/",
-    #     "rtsp://admin:millelec01@192.168.16.9:554/Streaming/Channels/401/"]
-    v = ["rtsp://root:millelec01@10.0.1.10:554/axis-media/media.amp",
-         "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/101/",
+    v = ["rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/101/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/201/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/301/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/401/",
@@ -623,22 +614,13 @@ def online_grading():
     t.start()
 
     cams = []
-    first = True
     for cam_num, vstream in enumerate(v):
-        if first:
-            new_cam = visutil.camera(vstream,
-                                     cam_num,
-                                     queueSize=2,
-                                     fake=False,
-                                     rectify=True)
-            first = False
-        else:
-            new_cam = visutil.camera(vstream,
-                                     cam_num,
-                                     rectify=True,
-                                     undistort=True,
-                                     fake=False,
-                                     queueSize=11)
+        new_cam = visutil.camera(vstream,
+                                 cam_num,
+                                 rectify=True,
+                                 undistort=True,
+                                 fake=False,
+                                 queueSize=11)
         t = threading.Thread(target=visutil.poll_camera,
                              args=(new_cam,),
                              daemon=True)
@@ -655,7 +637,12 @@ def online_grading():
 
     imgs = [cam.img for cam in cams]
     pad_height = imgs[0].shape[0]
-    pad = np.zeros((pad_height, 50, 3), dtype=np.uint8)
+    pad_1_width = 57
+    pad_1 = np.zeros((pad_height, pad_1_width, 3), dtype=np.uint8)
+    pad_2_width = 57
+    pad_2 = np.zeros((pad_height, pad_2_width, 3), dtype=np.uint8)
+    pad_3_width = 56
+    pad_3 = np.zeros((pad_height, pad_3_width, 3), dtype=np.uint8)
 
     while True:
         input_reader = subprocess.Popen("IO_Adapter/Input/INPUT",
@@ -675,13 +662,15 @@ def online_grading():
         imgs = [cam.img for cam in cams]
 
         # bot_img = np.concatenate(tuple(imgs[1:5]), axis=1)
-        bot_img = np.concatenate((imgs[1], pad,
-                                  imgs[2], pad,
-                                  imgs[3], pad,
-                                  imgs[4]),
+        bot_img = np.concatenate((imgs[0], pad_1,
+                                  imgs[1], pad_2,
+                                  imgs[2], pad_3,
+                                  imgs[3]),
                                  axis=1)
 
-        top_img = np.fliplr(imgs[0]).copy()
+        top_img = np.concatenate((np.flip(imgs[4], axis=1),
+                                  np.flip(imgs[5], axis=1)),
+                                 axis=1)
 
         input_reader.terminate()
         grade_now(top_img, bot_img, start_t, display=HMI_display)

@@ -148,8 +148,8 @@ class camera(object):
             self.ret, self.img = self.cap.read()
             self.orig_img = self.img
         else:
-            test_filename = 'Scans_for_testing/Raw/With_cant/{}.png'.\
-                    format(cam_num)
+            test_filename = 'camera_5&6_rect/trail/{}.png'.format(
+                cam_num)
             try:
                 self.orig_img = cv2.imread(test_filename)
                 self.img = self.orig_img
@@ -162,14 +162,24 @@ class camera(object):
             print("Cannot connect to {}".format(rtsp_path))
             exit()
         if self.undistort is True:
-            self.wide_camera_cal = pickle.load(open('wide_camera_cal.p', 'rb'))
-            self.img = cv2.undistort(self.img,
-                                     self.wide_camera_cal[0],
-                                     self.wide_camera_cal[1],
-                                     self.wide_camera_cal[2],
-                                     self.wide_camera_cal[3])
+            if cam_num < 4:
+                self.wide_camera_cal = pickle.load(
+                    open('wide_camera_cal.p', 'rb'))
+                self.img = cv2.undistort(self.img,
+                                         self.wide_camera_cal[0],
+                                         self.wide_camera_cal[1],
+                                         self.wide_camera_cal[2],
+                                         self.wide_camera_cal[3])
+            else:
+                self.wide_camera_cal = pickle.load(
+                    open('camera_5_cal.p', 'rb'))
+                self.img = cv2.undistort(self.img,
+                                         self.wide_camera_cal[0],
+                                         self.wide_camera_cal[1],
+                                         self.wide_camera_cal[2],
+                                         self.wide_camera_cal[3])
         if self.rectify is True:
-            window = pickle.load(open('rectify_windows.p',
+            window = pickle.load(open('new_rectify_windows.p',
                                       'rb'))[cam_num]
             config = configparser.ConfigParser()
             if os.path.isfile('cameras.config') is False:

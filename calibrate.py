@@ -31,10 +31,10 @@ objp[:, :2] = np.mgrid[0:x, 0:y].T.reshape(-1, 2)
 objpoints = []  # 3d point in real world space
 imgpoints = []  # 2d points in image plane.
 
-images = glob.glob('Calibration/*.png')
+images = glob.glob('camera_6_calib/*.png')
 
 i = 0
-for fname in images:
+for fname in images[::-1]:
     img = cv2.imread(fname)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -57,11 +57,14 @@ for fname in images:
 
         # Draw and display the corners
         cv2.drawChessboardCorners(img, (x, y), corners2, ret)
+        cv2.namedWindow('img', flags=cv2.WINDOW_NORMAL)
         cv2.imshow('img', img)
         cv2.waitKey(1)
 cv2.destroyAllWindows()
 if len(imgpoints) < 10:
-    print("Not enough pictures with corners detected, need at least 10")
+    print(
+        "Not enough pictures with corners detected ({}), " +
+        "need at least 10.".format(len(imgpoints)))
     exit()
 
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints,
@@ -72,12 +75,13 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints,
 h, w = img.shape[:2]
 newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
 wide_camera_cal = [mtx, dist, None, newcameramtx]
-with open('wide_camera_cal.p', 'wb') as file_to_dump_into:
+with open('camera_6_cal.p', 'wb') as file_to_dump_into:
     pickle.dump(wide_camera_cal, file_to_dump_into)
-    print("writing 'wide_camera_cal.p'")
+    print("writing 'camera_6_cal.p'")
 
 dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
 
 to_show = dst
+cv2.namedWindow('img', flags=cv2.WINDOW_NORMAL)
 cv2.imshow('img', to_show)
 cv2.waitKey(0)
