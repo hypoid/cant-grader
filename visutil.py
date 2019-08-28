@@ -9,6 +9,7 @@ import threading
 import os
 import pickle
 import configparser
+import math
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -126,6 +127,8 @@ class camera(object):
                    the latest one.
         rectify: Whether to rectify the image using a
                  saved config file 'main_cam_window.p'
+        fake: What it sounds like
+        jit: Whether to do just in time undistort/rectification
 
     """
 
@@ -134,7 +137,8 @@ class camera(object):
                  cam_num, queueSize=2,
                  rectify=False,
                  undistort=False,
-                 fake=False):
+                 fake=False,
+                 jit=False):
         """Connect the the camera at the specified rtsp path.
 
         rtsp_path: a url showing what stream to use.
@@ -143,6 +147,7 @@ class camera(object):
         self.fake = fake
         self.rectify = rectify
         self.undistort = undistort
+        self.jit = jit
         if self.fake is False:
             self.cap = cv2.VideoCapture(rtsp_path)
             self.ret, self.img = self.cap.read()
@@ -227,22 +232,30 @@ class camera(object):
             self.ret, new_img = self.cap.read()
         else:
             new_img = self.orig_img
-        if self.undistort is True:
-            new_img = cv2.undistort(new_img,
-                                    self.wide_camera_cal[0],
-                                    self.wide_camera_cal[1],
-                                    self.wide_camera_cal[2],
-                                    self.wide_camera_cal[3])
-        if self.rectify is True:
-            new_img = cv2.warpPerspective(new_img,
-                                          self.M,
-                                          (self.cp[2][0],
-                                           self.cp[2][1]))
-        self.frames.append(new_img)
-        if len(self.frames) > self.max_buff_size:
-            self.frames.popleft()
-        self.img = self.frames[0]
-        return self.ret
+        if self.jit is False:
+            if self.undistort is True:
+                new_img = cv2.undistort(new_img,
+                                        self.wide_camera_cal[0],
+                                        self.wide_camera_cal[1],
+                                        self.wide_camera_cal[2],
+                                        self.wide_camera_cal[3])
+            if self.rectify is True:
+                new_img = cv2.warpPerspective(new_img,
+                                              self.M,
+                                              (self.cp[2][0],
+                                               self.cp[2][1]))
+            self.frames.append(new_img)
+            if len(self.frames) > self.max_buff_size:
+                self.frames.popleft()
+            self.img = self.frames[0]
+            return self.ret
+        elif self.jit is True:
+            self.frames.append(new_img)
+            if len(self.frames) > self.max_buff_size:
+                self.frames.popleft()
+            self.img = self.frames[0]
+            return self.ret
+            
 
     def motion_update(self):
         """Update the motion detection attributes."""
@@ -289,11 +302,13 @@ class display(object):
         """Display the current image."""
         cv2.namedWindow('Current Scan', flags=cv2.WINDOW_NORMAL)
         while True:
-            cv2.imshow('Current Scan', self.img)
+            #imS = cv2.resize(self.img, (math.floor(self.img.shape[1]/4), math.floor(self.img.shape[0]/4)))
+            imS = self.img
+            cv2.imshow('Current Scan', imS)
             k = cv2.waitKey(20) & 0xFF
             if k == 27:  # If 'Esc' is pressed
                 print('Operation Canceled By User')
-                break
+                exit()
 
     def update_display(self, new_img):
         self.frames.append(new_img)

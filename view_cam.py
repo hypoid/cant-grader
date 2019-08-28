@@ -7,6 +7,7 @@ import traceback
 import time
 import argparse
 import numpy as np
+import math
 
 import visutil
 
@@ -26,6 +27,7 @@ ap.add_argument('-f', '--fake',
                 action='store_true')
 args = vars(ap.parse_args())
 use_fake = args['fake']
+cv2.namedWindow('image', cv2.WINDOW_NORMAL)
 
 v = ["rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/101/",
      "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/201/",
@@ -40,7 +42,7 @@ for cam_num, vstream in enumerate(v):
     if cam_num < 4:
         new_cam = visutil.camera(vstream,
                                  cam_num,
-                                 queueSize=13,
+                                 queueSize=10,
                                  rectify=True,
                                  undistort=True,
                                  fake=use_fake)
@@ -60,7 +62,6 @@ for cam_num, vstream in enumerate(v):
 print("Waiting 2 seconds while the cameras fully connect.")
 time.sleep(2)
 
-cv2.namedWindow('image', flags=cv2.WINDOW_NORMAL)
 
 imgs = [cam.img for cam in cams]
 pad_height = imgs[0].shape[0]
@@ -82,7 +83,9 @@ while True:
                               np.flip(imgs[5], axis=1)),
                              axis=1)
     full_img = np.concatenate((top_img, bot_img), axis=0)
-    cv2.imshow('image', full_img)
+    # imS = cv2.resize(full_img, (math.floor(full_img.shape[1]/4), math.floor(full_img.shape[0]/4)))
+    imS = full_img
+    cv2.imshow('image', imS)
     k = cv2.waitKey(1) & 0xFF
     if k == 27:
         print("Esc key pressed: Exiting")

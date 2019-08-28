@@ -1,6 +1,5 @@
 """A little class to handle finding knots."""
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -19,7 +18,7 @@ class knot_finder(object):
         #        'fine_tuned_model/'
         #        'frozen_inference_graph.pb')
         if path is None:
-            PATH_TO_MODEL = ('Training_Job/'
+            PATH_TO_MODEL = ('Production_Graphs/'
                              'fine_tuned_model_production/'
                              'frozen_inference_graph.pb')
         else:
@@ -31,19 +30,20 @@ class knot_finder(object):
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
-            # with tf.device('/device:GPU:1'):
-            # with tf.device('/device:CPU:0'):
-            self.image_tensor = self.detection_graph.get_tensor_by_name(
-                'image_tensor:0')
-            self.d_boxes = self.detection_graph.get_tensor_by_name(
-                'detection_boxes:0')
-            self.d_scores = self.detection_graph.get_tensor_by_name(
-                'detection_scores:0')
-            self.d_classes = self.detection_graph.get_tensor_by_name(
-                'detection_classes:0')
-            self.num_d = self.detection_graph.get_tensor_by_name(
-                'num_detections:0')
-        self.sess = tf.Session(graph=self.detection_graph)
+            with tf.device('/device:GPU:1'):
+                self.image_tensor = self.detection_graph.get_tensor_by_name(
+                    'image_tensor:0')
+                self.d_boxes = self.detection_graph.get_tensor_by_name(
+                    'detection_boxes:0')
+                self.d_scores = self.detection_graph.get_tensor_by_name(
+                    'detection_scores:0')
+                self.d_classes = self.detection_graph.get_tensor_by_name(
+                    'detection_classes:0')
+                self.num_d = self.detection_graph.get_tensor_by_name(
+                    'num_detections:0')
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(graph=self.detection_graph,config=config)
 
     def get_cant_and_knots(self, img):
         """Find bounding boxes for all of the knots in the image 'img'."""
@@ -107,7 +107,7 @@ class Box(object):
                       (self.xmin, self.ymin),
                       (self.xmax, self.ymax),
                       color,
-                      1)
+                      3)
 
 
 if __name__ == '__main__':

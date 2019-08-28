@@ -1,6 +1,0 @@
-model_checkpoint_path: "/home/ubuntu/cant-grader/Training_Job/models/train/model.ckpt-295000"
-all_model_checkpoint_paths: "/home/ubuntu/cant-grader/Training_Job/models/train/model.ckpt-290975"
-all_model_checkpoint_paths: "/home/ubuntu/cant-grader/Training_Job/models/train/model.ckpt-292010"
-all_model_checkpoint_paths: "/home/ubuntu/cant-grader/Training_Job/models/train/model.ckpt-293046"
-all_model_checkpoint_paths: "/home/ubuntu/cant-grader/Training_Job/models/train/model.ckpt-294082"
-all_model_checkpoint_paths: "/home/ubuntu/cant-grader/Training_Job/models/train/model.ckpt-295000"

@@ -12,10 +12,12 @@ import cv2
 import argparse
 import glob
 import shutil
+import paho.mqtt.client as paho
 
 import detect_cants_and_knots
 
-DEBUG = False
+DEBUG = True
+USE_MQTT = True
 
 
 def info(type, value, tb):
@@ -28,7 +30,7 @@ if DEBUG:
     sys.excepthook = info
 
 
-USE_CPU_ONLY = True
+USE_CPU_ONLY = False
 if USE_CPU_ONLY is True:
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
@@ -41,15 +43,15 @@ DPI = 20.0
 min_spec2_length_inch = 96
 
 max_Spec1_standard_knot_diam_inch = 8
-max_Spec2_standard_knot_diam_inch = 1
+max_Spec2_standard_knot_diam_inch = 1.3
 max_Spec2_premium_knot_diam_inch = 0.5
 
 spec1_s_ignore_knot_size_inch = 2
-spec2_s_ignore_knot_size_inch = 0.2
-spec2_p_ignore_knot_size_inch = 0.1
+spec2_s_ignore_knot_size_inch = 0.8
+spec2_p_ignore_knot_size_inch = 0.25
 
-spec1_s_max_knots = 3
-spec2_s_max_knots = 1
+spec1_s_max_knots = 6
+spec2_s_max_knots = 5
 spec2_p_max_knots = 1
 
 cant_min_face_filter_size = 100  # Filter to use on cant face objects
@@ -64,11 +66,11 @@ spec2_saw_space = 1.25
 spec1_bf_per_inch = 1/12
 spec2_bf_per_inch = 0.75/12
 
-downgrade_price_per_1kBF = 200
+downgrade_price_per_1kBF = 150
 spec1_stand_price_per_1kBF = 300
-spec2_stand_price_per_1kBF = 400
+spec2_stand_price_per_1kBF = 550
 
-spec2_prem_price_per_1kBF = 600
+spec2_prem_price_per_1kBF = 800
 
 
 def find_value(num_boards,
@@ -134,7 +136,7 @@ def define_good_sections(cants,
         if section_end_px-start <= piece_length:
             sections[sec_idx] = True
         # Filter OUT this section if it contains detected knot large or
-        # too many knots that are above a given size
+        # too many knots that are above the knot_ignore size
         knot_count = 0
         for knot in knots:
             if (
@@ -244,7 +246,7 @@ def draw_piece_good_length(cants, im, sections, y_pos):
                      (i, 0),
                      (i, im.shape[0]-1),
                      (255, 0, 255),
-                     1)
+                     3)
 
 
 def filter_cants_and_knots(cants, knots):
@@ -264,7 +266,8 @@ def filter_cants_and_knots(cants, knots):
 def grade_now(topimg, botimg,
               start_time,
               display=None,
-              folder_name=None):
+              folder_name=None,
+              mqtt_client=None):
     print("Now Grading...")
     drawn_topimg = topimg.copy()
     drawn_botimg = botimg.copy()
@@ -296,12 +299,12 @@ def grade_now(topimg, botimg,
                  (0, 1),
                  (300, 1),
                  (255, 0, 0),
-                 2)
+                 3)
         cv2.line(crop,
                  (0, 299),
                  (300, 299),
                  (255, 0, 0),
-                 2)
+                 3)
         # Recenter the scan window for next scan based on
         # the cant's y coord
         if len(cants) > 0:
@@ -313,6 +316,7 @@ def grade_now(topimg, botimg,
                     y = (height-(size/2))-1
                 if y < size/2:
                     y = 1 + size/2
+        # Translate the view coordinates to gobal coordinates
         for knot in knots:
             knot.ymin += y1
             knot.ymax += y1
@@ -350,12 +354,12 @@ def grade_now(topimg, botimg,
                  (0, 1),
                  (300, 1),
                  (255, 0, 0),
-                 2)
+                 3)
         cv2.line(crop,
                  (0, 299),
                  (300, 299),
                  (255, 0, 0),
-                 2)
+                 3)
         # Recenter the scan window for next scan based on
         # the cant's y coord
         if len(cants) > 0:
@@ -381,7 +385,24 @@ def grade_now(topimg, botimg,
         total_bot_knots += knots
         total_bot_cants += cants  # This only adds 1 cant, if there are any
 
-    all_cants = total_bot_cants+total_top_cants
+    if len(total_top_cants) > 0:
+        filtered_total_top_cants = [total_top_cants[0]]
+        for index, cant in enumerate(total_top_cants):
+            if index is not 0:
+                if cant.xmin - filtered_total_top_cants[-1].xmax < 300:
+                    filtered_total_top_cants.append(cant)
+    else:
+        filtered_total_top_cants = []
+    if len(total_bot_cants) > 0:
+        filtered_total_bot_cants = [total_bot_cants[0]]
+        for index, cant in enumerate(total_bot_cants):
+            if index is not 0:
+                if cant.xmin - filtered_total_bot_cants[-1].xmax < 300:
+                    filtered_total_bot_cants.append(cant)
+    else:
+        filtered_total_bot_cants = []
+
+    all_cants = filtered_total_bot_cants + filtered_total_top_cants
     all_knots = total_bot_knots+total_top_knots
     piece_length = find_piece_length(all_cants)
 
@@ -449,14 +470,13 @@ def grade_now(topimg, botimg,
 
     print('Done Grading. Time taken ='+str(time.time() - start_time))
 
-    # TODO: Fix the top camera and revert this logic
-    # Done?
     # if (
-    #     (spec1_s_value > spec2_s_value and
-    #      spec1_s_value > spec2_p_value)
-    #     or
-    #     (downgrade_value > spec2_s_value and
-    #      downgrade_value > spec2_p_value)
+    #     (
+    #      (spec1_s_value > spec2_s_value and spec1_s_value > spec2_p_value)
+    #      or
+    #      (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
+    #     )
+    #     and len(total_top_knots) > 0 and len(total_bot_knots) > 0
     #    ):
     if (
         (
@@ -464,7 +484,6 @@ def grade_now(topimg, botimg,
          or
          (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
         )
-        and len(total_top_knots) > 0 and len(total_bot_knots) > 0
        ):
         print("Activating Spec1 output.")
         subprocess.call("IO_Adapter/Output/Send_Bad")
@@ -508,17 +527,47 @@ def grade_now(topimg, botimg,
                            spec1_stand_sections_clear,
                            drawn_botimg.shape[0]-21)
 
-    # Draw the cant and knots
-    # TODO: Fix camera and uncomment this
-    # Done?
     for cant in total_top_cants:
-        cant.draw(drawn_topimg, draw_probability=True)
+        cant.draw(drawn_topimg, draw_probability=False)
     for knot in total_top_knots:
-        knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=True)
+        knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=False)
     for cant in total_bot_cants:
-        cant.draw(drawn_botimg, draw_probability=True)
+        cant.draw(drawn_botimg, draw_probability=False)
     for knot in total_bot_knots:
-        knot.draw(drawn_botimg, color=(0, 0, 255), draw_probability=True)
+        knot.draw(drawn_botimg, color=(0, 0, 255), draw_probability=False)
+    if mqtt_client is not None:
+        try:
+            piece_length_feet = spec1_down_length/12
+            top_knot_count = len(total_top_knots)
+            bot_knot_count = len(total_bot_knots)
+            top_knots_per_foot = top_knot_count / piece_length_feet
+            bot_knots_per_foot = bot_knot_count / piece_length_feet
+            total_knots_per_foot = top_knots_per_foot + bot_knots_per_foot
+            knots_per_foot_top_percentage = top_knots_per_foot / total_knots_per_foot
+            ret = mqtt_client.publish("cant_grader_latest_piece_length_inches", str(spec1_down_length))
+            ret = mqtt_client.publish("cant_grader_latest_piece_bottom_knots", bot_knot_count)
+            ret = mqtt_client.publish("cant_grader_latest_piece_top_knots", top_knot_count)
+            ret = mqtt_client.publish("cant_grader_latest_piece_bottom_knots_per_foot",
+                                      bot_knots_per_foot)
+            ret = mqtt_client.publish("cant_grader_latest_piece_top_knots_per_foot",
+                                      top_knots_per_foot)
+            ret = mqtt_client.publish("cant_grader_latest_piece_total_knots_per_foot",
+                                      total_knots_per_foot)
+            ret = mqtt_client.publish("cant_grader_latest_piece_knot_per_foot_top_percentage",
+                                      knots_per_foot_top_percentage)
+            total_knot_diams = 0.0
+            for knot in all_knots:
+                current_knot_x_size = abs(knot.xmax-knot.xmin)/DPI
+                current_knot_y_size = abs(knot.ymax-knot.ymin)/DPI
+                if current_knot_y_size > current_knot_x_size:
+                    total_knot_diams += current_knot_y_size
+                else:
+                    total_knot_diams += current_knot_x_size
+            average_knot_diam = total_knot_diams / len(all_knots)
+            ret = mqtt_client.publish("cant_grader_latest_piece_average_knot_diameter_inches",
+                                      average_knot_diam)
+        except:
+            print("Error sending MQTT data")
 
     if SAVE_SCANS is True:
         if not os.path.exists(output_root):
@@ -600,6 +649,12 @@ def find_cant(img, start_left=True):
 
 
 def online_grading():
+    if USE_MQTT:
+        broker = "192.168.16.240"
+        port = 1883
+        mqttclient = paho.Client('ID-cant-grader')
+        mqttclient.connect(broker, port)
+        mqttclient.loop_start()
     v = ["rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/101/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/201/",
          "rtsp://admin:millelec01@10.0.1.11:554/Streaming/Channels/301/",
@@ -615,27 +670,44 @@ def online_grading():
 
     cams = []
     for cam_num, vstream in enumerate(v):
-        new_cam = visutil.camera(vstream,
-                                 cam_num,
-                                 rectify=True,
-                                 undistort=True,
-                                 fake=False,
-                                 queueSize=11)
+        if cam_num < 4:
+            new_cam = visutil.camera(vstream,
+                                     cam_num,
+                                     rectify=True,
+                                     undistort=True,
+                                     fake=False,
+                                     queueSize=10,
+                                     jit=True)
+        elif cam_num:
+            new_cam = visutil.camera(vstream,
+                                     cam_num,
+                                     rectify=True,
+                                     undistort=True,
+                                     fake=False,
+                                     queueSize=1,
+                                     jit=True)
         t = threading.Thread(target=visutil.poll_camera,
                              args=(new_cam,),
                              daemon=True)
         t.start()
-        if USEMOTION is True:
-            t2 = threading.Thread(target=visutil.motion_detect,
-                                  args=(new_cam,),
-                                  daemon=True)
-            t2.start()
         cams.append(new_cam)
 
     print("Waiting 5 seconds while cameras connect.")
     time.sleep(5)
 
-    imgs = [cam.img for cam in cams]
+    # imgs = [cam.img for cam in cams]
+    imgs = []
+    for cam in cams:
+        new_img = cv2.undistort(cam.img,
+                                cam.wide_camera_cal[0],
+                                cam.wide_camera_cal[1],
+                                cam.wide_camera_cal[2],
+                                cam.wide_camera_cal[3])
+        new_img = cv2.warpPerspective(new_img,
+                                      cam.M,
+                                      (cam.cp[2][0],
+                                       cam.cp[2][1]))
+        imgs.append(new_img)
     pad_height = imgs[0].shape[0]
     pad_1_width = 57
     pad_1 = np.zeros((pad_height, pad_1_width, 3), dtype=np.uint8)
@@ -659,7 +731,20 @@ def online_grading():
         print('Waited {} seconds'.format(time.time()-wait_start))
         start_t = time.time()
         # Get images
-        imgs = [cam.img for cam in cams]
+        # imgs = [cam.img for cam in cams]
+        imgs = []
+        for cam in cams:
+            new_img = cv2.undistort(cam.img,
+                                    cam.wide_camera_cal[0],
+                                    cam.wide_camera_cal[1],
+                                    cam.wide_camera_cal[2],
+                                    cam.wide_camera_cal[3])
+            new_img = cv2.warpPerspective(new_img,
+                                          cam.M,
+                                          (cam.cp[2][0],
+                                           cam.cp[2][1]))
+            imgs.append(new_img)
+
 
         # bot_img = np.concatenate(tuple(imgs[1:5]), axis=1)
         bot_img = np.concatenate((imgs[0], pad_1,
@@ -673,7 +758,10 @@ def online_grading():
                                  axis=1)
 
         input_reader.terminate()
-        grade_now(top_img, bot_img, start_t, display=HMI_display)
+        if USE_MQTT:
+            grade_now(top_img, bot_img, start_t, display=HMI_display, mqtt_client=mqttclient)
+        else:
+            grade_now(top_img, bot_img, start_t, display=HMI_display, mqtt_client=None)
 
 
 def simulated_grading():
