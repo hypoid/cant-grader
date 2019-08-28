@@ -126,4 +126,10 @@ max_Spec2_standard_knot_diam_inch = 1.9, now 1.3
 Prices dropped, allowing NO knots
 spec2_s_max_knots was 5, now 0
 spec2_p_max_knots was 1, now 0
+spec2_s_ignore_knot_size_inch was 0.8, now 0
+spec2_p_ignore_knot_size_inch was 0.25, now 0
+downgrade_price_per_1kBF was 150, now 299
+spec1_stand_price_per_1kBF was 300, now 299
+spec2_stand_price_per_1kBF was 550, now 300
+spec2_prem_price_per_1kBF was 800, now 300
 

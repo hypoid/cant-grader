@@ -47,8 +47,8 @@ max_Spec2_standard_knot_diam_inch = 1.3
 max_Spec2_premium_knot_diam_inch = 0.5
 
 spec1_s_ignore_knot_size_inch = 2
-spec2_s_ignore_knot_size_inch = 0.8
-spec2_p_ignore_knot_size_inch = 0.25
+spec2_s_ignore_knot_size_inch = 0
+spec2_p_ignore_knot_size_inch = 0
 
 spec1_s_max_knots = 6
 spec2_s_max_knots = 0
@@ -66,11 +66,10 @@ spec2_saw_space = 1.25
 spec1_bf_per_inch = 1/12
 spec2_bf_per_inch = 0.75/12
 
-downgrade_price_per_1kBF = 150
-spec1_stand_price_per_1kBF = 300
-spec2_stand_price_per_1kBF = 550
-
-spec2_prem_price_per_1kBF = 800
+downgrade_price_per_1kBF = 299
+spec1_stand_price_per_1kBF = 299
+spec2_stand_price_per_1kBF = 300
+spec2_prem_price_per_1kBF = 300
 
 
 def find_value(num_boards,
