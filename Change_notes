@@ -133,3 +133,10 @@ spec1_stand_price_per_1kBF was 300, now 299
 spec2_stand_price_per_1kBF was 550, now 300
 spec2_prem_price_per_1kBF was 800, now 300
 
+20190929
+Fixed a problem where incomplete scans were mostly graded as spec2
+Added:
+	 or
+         (len(all_cants) < 8) # Grade Spec1 if we don't have a complete scan
+
+

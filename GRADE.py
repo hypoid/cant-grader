@@ -477,11 +477,15 @@ def grade_now(topimg, botimg,
     #     )
     #     and len(total_top_knots) > 0 and len(total_bot_knots) > 0
     #    ):
+
+    # Here we make the final decision:
     if (
         (
          (spec1_s_value > spec2_s_value and spec1_s_value > spec2_p_value)
          or
          (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
+         or
+         (len(all_cants) < 8) # Grade Spec1 if we don't have a complete scan
         )
        ):
         print("Activating Spec1 output.")
