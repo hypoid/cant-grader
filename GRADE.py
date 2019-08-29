@@ -485,7 +485,7 @@ def grade_now(topimg, botimg,
          or
          (downgrade_value > spec2_s_value and downgrade_value > spec2_p_value)
          or
-         (len(all_cants) < 8) # Grade Spec1 if we don't have a complete scan
+         (len(all_cants) < 10) # Grade Spec1 if we don't have a complete scan
         )
        ):
         print("Activating Spec1 output.")

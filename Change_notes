@@ -137,6 +137,6 @@ spec2_prem_price_per_1kBF was 800, now 300
 Fixed a problem where incomplete scans were mostly graded as spec2
 Added:
 	 or
-         (len(all_cants) < 8) # Grade Spec1 if we don't have a complete scan
+         (len(all_cants) < 10) # Grade Spec1 if we don't have a complete scan
 
 
