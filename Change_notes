@@ -139,4 +139,7 @@ Added:
 	 or
          (len(all_cants) < 10) # Grade Spec1 if we don't have a complete scan
 
-
+20191001
+Prices back up, need to make just 1% more 5/4
+spec2_s_max_knots was 0, now 1
+spec2_p_max_knots was 0, now 1
