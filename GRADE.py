@@ -43,7 +43,7 @@ DPI = 20.0
 min_spec2_length_inch = 96
 
 max_Spec1_standard_knot_diam_inch = 8
-max_Spec2_standard_knot_diam_inch = 1.8
+max_Spec2_standard_knot_diam_inch = 2.0
 max_Spec2_premium_knot_diam_inch = 0.5
 
 spec1_s_ignore_knot_size_inch = 2
