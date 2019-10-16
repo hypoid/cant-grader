@@ -17,7 +17,7 @@ import paho.mqtt.client as paho
 import detect_cants_and_knots
 
 DEBUG = True
-USE_MQTT = False
+USE_MQTT = True
 
 
 def info(type, value, tb):
