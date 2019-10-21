@@ -1,5 +1,5 @@
 """Grade when the signal is given"""
-import os
+import argparse
 import traceback
 import pdb
 import sys
@@ -9,10 +9,10 @@ import subprocess
 import visutil
 import numpy as np
 import cv2
-import argparse
 import glob
-import shutil
+import os
 import paho.mqtt.client as paho
+import shutil
 
 import detect_cants_and_knots
 
