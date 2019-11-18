@@ -531,13 +531,13 @@ def grade_now(topimg, botimg,
                            drawn_botimg.shape[0]-21)
 
     for cant in total_top_cants:
-        cant.draw(drawn_topimg, draw_probability=False)
+        cant.draw(drawn_topimg)
     for knot in total_top_knots:
-        knot.draw(drawn_topimg, color=(0, 0, 255), draw_probability=False)
+        knot.draw(drawn_topimg, color=(0, 0, 255))
     for cant in total_bot_cants:
-        cant.draw(drawn_botimg, draw_probability=False)
+        cant.draw(drawn_botimg)
     for knot in total_bot_knots:
-        knot.draw(drawn_botimg, color=(0, 0, 255), draw_probability=False)
+        knot.draw(drawn_botimg, color=(0, 0, 255))
     if mqtt_client is not None:
         try:
             piece_length_feet = spec1_down_length/12

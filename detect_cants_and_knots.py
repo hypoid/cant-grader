@@ -93,10 +93,10 @@ class Box(object):
                                                       self.xmax,
                                                       self.score)
 
-    def draw(self, img, color=(0, 255, 0), draw_probability=False):
+    def draw(self, img, color=(0, 255, 0), draw_probability=True):
         if draw_probability is True:
             cv2.putText(img,
-                        str(self.score),
+                        str(round(self.score, 4)),
                         (self.xmin, self.ymin-3),
                         font,
                         1,
