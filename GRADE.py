@@ -47,7 +47,7 @@ max_Spec2_standard_knot_diam_inch = 2.0
 max_Spec2_premium_knot_diam_inch = 0.5
 
 spec1_s_ignore_knot_size_inch = 2
-spec2_s_ignore_knot_size_inch = 0.8
+spec2_s_ignore_knot_size_inch = 0.7
 spec2_p_ignore_knot_size_inch = 0.25
 
 spec1_s_max_knots = 6
