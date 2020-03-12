@@ -47,7 +47,7 @@ panda3d==1.10.1
 pexpect==4.2.1
 Pillow==6.0.0
 protobuf==3.6.1
-psutil==5.6.1
+psutil==5.6.6
 pycairo==1.16.2
 pycrypto==2.6.1
 pycups==1.9.73
