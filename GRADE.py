@@ -51,7 +51,7 @@ spec2_s_ignore_knot_size_inch = 0.7
 spec2_p_ignore_knot_size_inch = 0.25
 
 spec1_s_max_knots = 6
-spec2_s_max_knots = 3
+spec2_s_max_knots = 5
 spec2_p_max_knots = 1
 
 cant_min_face_filter_size = 100  # Filter to use on cant face objects
