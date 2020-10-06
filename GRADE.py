@@ -487,6 +487,8 @@ def grade_now(topimg, botimg,
          or
          (len(all_cants) < 10) # Grade Spec1 if we don't have a complete scan
         )
+         and len(total_top_knots) > 0
+         and len(total_bot_knots) > 0
        ):
         print("Activating Spec1 output.")
         subprocess.call("IO_Adapter/Output/Send_Bad")
